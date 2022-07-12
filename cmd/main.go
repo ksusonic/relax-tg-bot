@@ -1,7 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"github.com/ksusonic/relax-tg-bot/pkg/telegram"
+	"log"
+)
 
 func main() {
-	fmt.Println("Hello world!")
+	teleBot := telegram.NewBot(true)
+	if err := teleBot.Start(); err != nil {
+		log.Fatal(err)
+	}
 }
