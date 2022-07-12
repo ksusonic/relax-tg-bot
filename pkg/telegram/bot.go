@@ -19,27 +19,36 @@ func NewBot(debug bool) Bot {
 	return Bot{bot: bot}
 }
 
-func (b *Bot) Start() error {
+func (b *Bot) Start() {
 	log.Printf("Authorized on account %s", b.bot.Self.UserName)
 
+	for update := range b.initUpdateChannel() {
+		if update.Message == nil {
+			continue
+		}
+
+		if update.Message.IsCommand() {
+			b.handleCommand(update.Message)
+			continue
+		}
+
+		b.handleMessage(update.Message)
+	}
+}
+
+func (b *Bot) handleMessage(message *tgbotapi.Message) {
+	log.Printf("[%s] %s", message.From.UserName, message.Text)
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
+	_, err := b.bot.Send(msg)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (b *Bot) initUpdateChannel() tgbotapi.UpdatesChannel {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates := b.bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			_, err := b.bot.Send(msg)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-	}
-
-	return nil
+	return b.bot.GetUpdatesChan(u)
 }
